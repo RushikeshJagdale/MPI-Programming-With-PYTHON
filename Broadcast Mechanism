@@ -1,0 +1,41 @@
+////////////////////// Broadcast Mechanisms Used: - Scatter and Gather ////////////////////////////////////
+
+#! /usr/bin/env python
+import numpy as np
+import matplotlib
+from mpi4py import MPI
+from scipy.linalg import det
+comm = MPI.COMM_WORLD
+size = comm.Get_size()
+rank = comm.Get_rank()
+
+#Create 1000x1000 Matrix
+A = np.arange(0,10000,0.01).reshape((1000,1000))
+#A = np.arange(9).reshape((3,3))
+
+#Create transpose of A
+B = A.transpose()
+
+if rank == 0:
+        data = B
+else:
+        data = None
+
+#Broadcasting of Matrix B
+Bdata = comm.bcast(B,root=0)
+#Scattering of Matrix A
+Adata = comm.scatter([A[(i*100):((i+1)*100),:] for i in range(size)],root=0)
+
+comm.Barrier()
+#Gathering of dot product Values
+Cdata =comm.gather(np.dot(A[(i*100):((i+1)*100),:],B),root=0)
+
+if rank == 0:
+#       Concatenating of all Matrices
+        CFinal = np.concatenate(Cdata)
+        print CFinal
+        print det(CFinal)
+        print det(Bdata)
+        print det(A)
+else:
+        None
